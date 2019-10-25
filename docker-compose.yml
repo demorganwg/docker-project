@@ -1,0 +1,71 @@
+version: "3.7"
+
+services:
+    webserver:
+        image: nginx:alpine
+        container_name: project_webserver
+        working_dir: /etc/nginx/conf.d
+        ports:
+          - 80:80
+        volumes:
+          - ${APP_PATH_HOST}/src:${APP_PATH_CONTAINER}
+          - ${APP_PATH_HOST}/docker/nginx/nginx.conf:/etc/nginx/conf.d/nginx.conf
+        depends_on:
+          - php-fpm
+        networks:
+          - ntw
+    php-fpm:
+      container_name: project_php-fpm
+      build: "docker/php-fpm/"
+      working_dir: ${APP_PATH_CONTAINER}
+      volumes:
+        - ${APP_PATH_HOST}/src:${APP_PATH_CONTAINER}
+      environment:
+        XDEBUG_CONFIG: "remote_host=${DOCKER_INTERNAL_IP}"
+      networks:
+        - ntw
+    db:
+      container_name: project_mysql
+      build: "docker/mysql/"
+      working_dir: /var/www
+      ports:
+        - 3307:3306
+      environment:
+        MYSQL_ROOT_PASSWORD: root
+        MYSQL_DATABASE: projectdb
+        MYSQL_USER: user
+        MYSQL_PASSWORD: password
+      volumes:
+        - project_data:${DB_PATH_CONTAINER}
+      networks:
+        - ntw
+#  rebbitmq:
+#    image: rabbitmq:3-management
+#    container_name: project_rabbitmq
+#    working_dir: /var/lib/rabbitmq
+#    networks:
+#        - prj
+#    volumes:
+#        - project_rebbitmq_data:/var/lib/rabbitmq/mnesia/rabbit@finpro
+#    environment:
+#      - RABBITMQ_DEFAULT_USER=root
+#      - RABBITMQ_DEFAULT_PASS=root
+#    ports:
+#      - "8081:15672"
+#  redis:
+#    container_name: project_redis
+#    image: redis:latest
+#    working_dir: /usr/local/etc/redis
+#    ports:
+#      - 6379:6379
+#    volumes:
+#      - project_redis_data:/usr/local/etc/redis
+#    networks:
+#      - prj
+networks:
+  ntw:
+    driver: bridge
+volumes:
+  project_data:
+#  project_redis_data:
+#  project_rebbitmq_data:
